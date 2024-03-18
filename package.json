@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@prisma/internals": "^5.11.0",
+    "typescript": "^5.4.2"
+  }
+}

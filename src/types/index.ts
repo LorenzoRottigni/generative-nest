@@ -1,4 +1,5 @@
 import ts from "typescript"
+import type { DMMF } from '@prisma/generator-helper'
 import { PrismaAPI } from "./enums"
 
 export declare interface Field {
@@ -17,7 +18,16 @@ export declare interface GeneratorConfig {
     }
 }
 
+export declare interface ModelBundle {
+    plugin: ts.SourceFile,
+    events: ts.SourceFile,
+    services: ts.SourceFile[],
+    controllers: ts.SourceFile[],
+    resolvers: ts.SourceFile[],
+}
+
 export declare interface ORMDriver {
+    parseSchema(schema: DMMF.Document): GeneratorConfig
     getCallExpression: (
         model: string,
         method: PrismaAPI,

@@ -1,9 +1,24 @@
 import ts from 'typescript'
+import type { DMMF } from '@prisma/generator-helper'
 import type { PrismaAPI } from '../types/enums'
-import type { ORMDriver } from '../types'
+import type { GeneratorConfig, ORMDriver } from '../types'
 
 export class PrismaDriver implements ORMDriver {
     constructor() {}
+
+    public parseSchema(schema: DMMF.Document): GeneratorConfig {
+      return {
+        schema: {
+            models: schema.datamodel.models.map(model => ({
+                name: model.name,
+                fields: model.fields.map(field => ({
+                    name: field.name,
+                    type: field.type
+                }))
+            }))
+        }
+    }
+    }
 
     /* this.prisma.<model>.<method>()*/
     public getCallExpression(

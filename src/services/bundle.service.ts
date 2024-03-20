@@ -52,6 +52,8 @@ export class BundleService {
   public async generateBundle(): Promise<string[]> {
     try {
       const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
+      console.log('qua', this.bundle[0].services[0].fileName)
+
       return (
         await Promise.all(
           this.bundle.map(
@@ -85,7 +87,6 @@ export class BundleService {
 
   public async writeFile(filename: string, file: string): Promise<string | null> {
     try {
-      console.log(_path.join(process.cwd(), filename))
       await fs.promises.writeFile(_path.join(process.cwd(), filename), file)
       return filename
     } catch (err) {
@@ -121,24 +122,37 @@ export class BundleService {
   }
 
   public getModelBundleIndex(model: string): number {
-    return this.bundle.findIndex((b) => b.plugin.fileName.split('.').includes(model.toLowerCase()))
+    return this.bundle.findIndex((b) =>
+      b.plugin.fileName
+        .split('.')
+        .some((chunk) => chunk.toLowerCase().includes(model.toLowerCase()))
+    )
   }
 
-  public getSourceFile(model: string, location: NestLocation): ts.SourceFile | null {
+  public getSourceFileKey(model: string, location: NestLocation): string | null {
     const bundle = this.bundle[this.getModelBundleIndex(model)]
     if (!this.bundle) return null
     const key = Object.keys(bundle).find((k) => k.toLowerCase().includes(location.toLowerCase()))
     if (!key || !(key in bundle)) return null
-    return bundle[key]
+    return key
   }
 
-  public setSourceFile(model: string, location: NestLocation, sourceFile: ts.SourceFile) {
-    const i = this.getModelBundleIndex(model)
-    let key = Object.keys(this.bundle[i]).find((k) =>
-      k.toLowerCase().includes(location.toLowerCase())
-    )
-    key = key && key in this.bundle[i] ? key : undefined
-    if (!key) return false
-    this.bundle[this.getModelBundleIndex(model)][key] = sourceFile
+  public updateSourceFile(
+    model: string,
+    location: NestLocation,
+    statements: ts.Statement[]
+  ): ts.SourceFile | null {
+    const i = this.getModelBundleIndex(model.toLowerCase())
+    if (typeof i !== 'number' || !this.bundle?.[i]) return null
+    const k = this.getSourceFileKey(model.toLowerCase(), location)
+    if (k === null || !this.bundle[i]?.[k]) return null
+
+    this.bundle[i][k] = [
+      ts.factory.updateSourceFile(
+        Array.isArray(this.bundle[i][k]) ? this.bundle[i][k][0] : this.bundle[i][k],
+        statements
+      ),
+    ]
+    return this.bundle[i][k]
   }
 }

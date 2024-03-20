@@ -2,11 +2,12 @@ import { GeneratorConfig, ModelBundle } from '../types'
 import { NestLocation } from '../types/enums'
 import ts from 'typescript'
 import fs from 'fs'
+import _path from 'path'
 
 export class BundleService {
   constructor(
     private config: GeneratorConfig,
-    private bundle: ModelBundle[],
+    public bundle: ModelBundle[] = [],
     private baseDir = '.g-nest'
   ) {}
 
@@ -48,21 +49,48 @@ export class BundleService {
     }
   }
 
-  public generateBundle(): string[] {
+  public async generateBundle(): Promise<string[]> {
     try {
       const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
-      return this.bundle
-        .map((modelBundle) =>
-          Object.values(modelBundle).map((sourceFile) =>
-            Array.isArray(sourceFile)
-              ? sourceFile.map((sourceFile) => printer.printFile(sourceFile))
-              : printer.printFile(sourceFile)
+      return (
+        await Promise.all(
+          this.bundle.map(
+            async (modelBundle) =>
+              await Promise.all(
+                Object.values(modelBundle).map(
+                  async (sourceFile: ts.SourceFile | ts.SourceFile[]) =>
+                    Array.isArray(sourceFile)
+                      ? await Promise.all(
+                          sourceFile.map(
+                            async (sourceFile: ts.SourceFile) =>
+                              await this.writeFile(
+                                sourceFile.fileName,
+                                printer.printFile(sourceFile)
+                              )
+                          )
+                        )
+                      : await this.writeFile(sourceFile.fileName, printer.printFile(sourceFile))
+                )
+              )
           )
         )
+      )
         .flat(3)
+        .filter((f): f is string => !!f)
     } catch (err) {
       console.error(err)
       return []
+    }
+  }
+
+  public async writeFile(filename: string, file: string): Promise<string | null> {
+    try {
+      console.log(_path.join(process.cwd(), filename))
+      await fs.promises.writeFile(_path.join(process.cwd(), filename), file)
+      return filename
+    } catch (err) {
+      console.error(err)
+      return null
     }
   }
 
@@ -73,7 +101,7 @@ export class BundleService {
     if (path?.startsWith('/')) path = path.slice(1, path.length - 1)
     if (path?.startsWith('./')) path = path.slice(2, path.length - 1)
     if (path?.endsWith('/')) path = path.slice(0, path.length - 2)
-    filename = `${path}/${filename}`
+    if (path) filename = _path.join(path, filename)
     try {
       if (path) {
         const dirs = path.split('/')
@@ -93,9 +121,7 @@ export class BundleService {
   }
 
   public getModelBundleIndex(model: string): number {
-    return this.bundle.findIndex(
-      (b) => b.plugin.fileName.split('.')[0].toLowerCase() === model.toLowerCase()
-    )
+    return this.bundle.findIndex((b) => b.plugin.fileName.split('.').includes(model.toLowerCase()))
   }
 
   public getSourceFile(model: string, location: NestLocation): ts.SourceFile | null {
@@ -107,16 +133,12 @@ export class BundleService {
   }
 
   public setSourceFile(model: string, location: NestLocation, sourceFile: ts.SourceFile) {
-    const key = this.findSourceKey(model, location)
-    if (!key) return false
-    this.bundle[this.getModelBundleIndex(model)][key] = sourceFile
-  }
-
-  public findSourceKey(model: string, location: string): string | null {
     const i = this.getModelBundleIndex(model)
-    const k = Object.keys(this.bundle[i]).find((k) =>
+    let key = Object.keys(this.bundle[i]).find((k) =>
       k.toLowerCase().includes(location.toLowerCase())
     )
-    return k && k in this.bundle[i] ? k : null
+    key = key && key in this.bundle[i] ? key : undefined
+    if (!key) return false
+    this.bundle[this.getModelBundleIndex(model)][key] = sourceFile
   }
 }

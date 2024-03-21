@@ -55,8 +55,3 @@ export declare interface GNestGenerator {
   get sourceLocation(): [string, string]
   generate(): ts.Statement[]
 }
-
-export declare interface GNestBundle {
-  modules: Record<string, ts.SourceFile[]>
-  config: Record<string, ts.SourceFile[]>
-}

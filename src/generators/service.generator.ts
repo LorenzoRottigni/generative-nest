@@ -3,7 +3,8 @@ import type { BundleService } from '../services/bundle.service'
 import type { GeneratorConfig, Model } from '../types'
 import ts from 'typescript'
 import { capitalize } from '../utils'
-import { NestLocation, PrismaAPI } from '../types/enums'
+import { NestLocation, NestPackage, PrismaAPI } from '../types/enums'
+import { NestService } from '../services/nest.service'
 
 export class ServiceGenerator {
   constructor(
@@ -19,6 +20,7 @@ export class ServiceGenerator {
           this.bundleService.updateSourceFile(model.name, NestLocation.service, [
             this.driver.DBClientImport,
             this.driver.getModelsImport([model.name]),
+            NestService.getNestImport(['Injectable'], NestPackage.common),
             this.getModelServiceClass(model),
           ])?.fileName
       )
@@ -38,7 +40,16 @@ export class ServiceGenerator {
 
   private getModelServiceClass(model: Model): ts.ClassDeclaration {
     return ts.factory.createClassDeclaration(
-      /* modifiers */ [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+      /* modifiers */ [
+        ts.factory.createDecorator(
+          ts.factory.createCallExpression(
+            ts.factory.createIdentifier('Injectable'),
+            /* type arguments */ undefined,
+            /* arguments */ []
+          )
+        ),
+        ts.factory.createModifier(ts.SyntaxKind.ExportKeyword),
+      ],
       /* name */ `${capitalize(model.name)}Service`,
       /* typeParams */ [],
       /* heritageClauses */ [],

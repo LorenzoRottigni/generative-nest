@@ -1,4 +1,5 @@
 import { PrismaDriver } from '../src/drivers/prisma.driver'
+import { ModuleGenerator } from '../src/generators/module.generator'
 import { ServiceGenerator } from '../src/generators/service.generator'
 import { BundleService } from '../src/services/bundle.service'
 import { getDMMF } from '@prisma/internals'
@@ -10,9 +11,12 @@ describe('bundle.service', () => {
     const config = prismaDriver.parseSchema(schema)
     const bundleService = new BundleService(config)
     await bundleService.loadBundle()
-    const serviceGenerator = new ServiceGenerator(prismaDriver, config, bundleService)
-    console.log(serviceGenerator.generateBundle())
-    console.log(bundleService.bundle[0].services[0].fileName)
+    const generators = [
+      new ServiceGenerator(prismaDriver, config, bundleService),
+      new ModuleGenerator(prismaDriver, config, bundleService),
+    ]
+    generators.forEach((generator) => console.log(generator.generateBundle()))
+
     console.log(await bundleService.generateBundle())
   })
 })

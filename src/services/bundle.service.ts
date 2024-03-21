@@ -34,8 +34,8 @@ export class BundleService {
               `${modelDir}/${NestLocation.controller}s`
             ),
           ],
-          plugin: await this.createSourceFile(
-            `${model.name.toLowerCase()}.${NestLocation.plugin}.ts`,
+          module: await this.createSourceFile(
+            `${model.name.toLowerCase()}.${NestLocation.module}.ts`,
             modelDir
           ),
           events: await this.createSourceFile(`${model.name.toLowerCase()}.events.ts`, modelDir),
@@ -52,7 +52,6 @@ export class BundleService {
   public async generateBundle(): Promise<string[]> {
     try {
       const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
-      console.log('qua', this.bundle[0].services[0].fileName)
 
       return (
         await Promise.all(
@@ -122,19 +121,12 @@ export class BundleService {
   }
 
   public getModelBundleIndex(model: string): number {
+    console.log('achi', this.bundle[0].module.fileName)
     return this.bundle.findIndex((b) =>
-      b.plugin.fileName
+      b.module.fileName
         .split('.')
         .some((chunk) => chunk.toLowerCase().includes(model.toLowerCase()))
     )
-  }
-
-  public getSourceFileKey(model: string, location: NestLocation): string | null {
-    const bundle = this.bundle[this.getModelBundleIndex(model)]
-    if (!this.bundle) return null
-    const key = Object.keys(bundle).find((k) => k.toLowerCase().includes(location.toLowerCase()))
-    if (!key || !(key in bundle)) return null
-    return key
   }
 
   public updateSourceFile(
@@ -142,17 +134,19 @@ export class BundleService {
     location: NestLocation,
     statements: ts.Statement[]
   ): ts.SourceFile | null {
+    console.log(this.bundle[0])
     const i = this.getModelBundleIndex(model.toLowerCase())
     if (typeof i !== 'number' || !this.bundle?.[i]) return null
-    const k = this.getSourceFileKey(model.toLowerCase(), location)
-    if (k === null || !this.bundle[i]?.[k]) return null
+    const k = Object.keys(this.bundle[i]).find((k) =>
+      k.toLowerCase().includes(location.toLowerCase())
+    )
+    if (typeof k !== 'string' || !this.bundle[i]?.[k]) return null
 
-    this.bundle[i][k] = [
-      ts.factory.updateSourceFile(
-        Array.isArray(this.bundle[i][k]) ? this.bundle[i][k][0] : this.bundle[i][k],
-        statements
-      ),
-    ]
+    const file = ts.factory.updateSourceFile(
+      Array.isArray(this.bundle[i][k]) ? this.bundle[i][k][0] : this.bundle[i][k],
+      statements
+    )
+    this.bundle[i][k] = Array.isArray(this.bundle[i][k]) ? [file] : file
     return this.bundle[i][k]
   }
 }

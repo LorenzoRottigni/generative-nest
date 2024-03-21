@@ -1,6 +1,13 @@
 import ts from 'typescript'
 import type { DMMF } from '@prisma/generator-helper'
 import { PrismaAPI } from './enums'
+import {
+  BeforeApplicationShutdown,
+  OnApplicationBootstrap,
+  OnApplicationShutdown,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common'
 
 export declare interface Field {
   name: string
@@ -19,12 +26,18 @@ export declare interface GeneratorConfig {
 }
 
 export declare interface ModelBundle {
-  plugin: ts.SourceFile
+  module: ts.SourceFile
   events: ts.SourceFile
   services: ts.SourceFile[]
   controllers: ts.SourceFile[]
   resolvers: ts.SourceFile[]
 }
+
+export declare type NestHooks = OnApplicationBootstrap &
+  OnModuleInit &
+  OnModuleDestroy &
+  BeforeApplicationShutdown &
+  OnApplicationShutdown
 
 export declare interface ORMDriver {
   parseSchema(schema: DMMF.Document): GeneratorConfig

@@ -31,3 +31,9 @@ export enum NestPackage {
   core = '@nestjs/core',
   common = '@nestjs/common',
 }
+
+export enum NestDecorator {
+  injectable = 'Injectable',
+  get = 'Get',
+  post = 'Post',
+}

@@ -3,6 +3,7 @@ import { NestLocation } from '../types/enums'
 import ts from 'typescript'
 import fs from 'fs'
 import _path from 'path'
+import { pluralize } from '../utils'
 
 export class BundleService {
   constructor(
@@ -19,19 +20,19 @@ export class BundleService {
           services: [
             await this.createSourceFile(
               `${model.name.toLowerCase()}.${NestLocation.service}.ts`,
-              `${modelDir}/${NestLocation.service}s`
+              `${modelDir}/${pluralize(NestLocation.service)}`
             ),
           ],
           resolvers: [
             await this.createSourceFile(
               `${model.name.toLowerCase()}.${NestLocation.resolver}.ts`,
-              `${modelDir}/${NestLocation.resolver}s`
+              `${modelDir}/${pluralize(NestLocation.resolver)}`
             ),
           ],
           controllers: [
             await this.createSourceFile(
               `${model.name.toLowerCase()}.${NestLocation.controller}.ts`,
-              `${modelDir}/${NestLocation.controller}s`
+              `${modelDir}/${pluralize(NestLocation.controller)}`
             ),
           ],
           module: await this.createSourceFile(

@@ -144,7 +144,14 @@ export class PrismaDriver implements ORMDriver {
     method: PrismaAPI,
     prismaIdentifier = 'this.prisma'
   ): ts.TypeReferenceNode {
-    const argsType = this.getCallArgsType(model, method).getText()
+    const argsType = ts
+      .createPrinter()
+      .printNode(
+        ts.EmitHint.Unspecified,
+        this.getCallArgsType(model, method),
+        ts.createSourceFile('', '', ts.ScriptTarget.Latest)
+      )
+      .trim()
     return ts.factory.createTypeReferenceNode('ReturnType', [
       /* typeName */ ts.factory.createTypeReferenceNode(
         `typeof ${prismaIdentifier}.${model.toLowerCase()}.${method}<typeof ${argsType}>`

@@ -3,7 +3,7 @@ import type { BundleService } from '../services/bundle.service'
 import type { GeneratorConfig, Model } from '../types'
 import ts from 'typescript'
 import { NestHook, NestLocation, NestPackage, PrismaAPI } from '../types/enums'
-import { capitalize } from '../utils'
+import { capitalize, pluralize } from '../utils'
 import { NestService } from '../services/nest.service'
 
 export class ModuleGenerator {
@@ -22,14 +22,16 @@ export class ModuleGenerator {
               [capitalize(NestLocation.module), ...Object.values(NestHook)],
               NestPackage.common
             ),
-            this.getServiceImport(model.name),
+            ...[NestLocation.service, NestLocation.controller].map((location) =>
+              this.getModelNestLocationImport(model.name, location)
+            ),
             this.getModelModule(model.name),
           ])?.fileName
       )
       .filter((f): f is string => !!f)
   }
 
-  private getServiceImport(model: string): ts.ImportDeclaration {
+  private getModelNestLocationImport(model: string, location: NestLocation): ts.ImportDeclaration {
     return ts.factory.createImportDeclaration(
       /* modifiers */ undefined,
       ts.factory.createImportClause(
@@ -39,12 +41,12 @@ export class ModuleGenerator {
           ts.factory.createImportSpecifier(
             false,
             /* propertyName */ undefined,
-            ts.factory.createIdentifier(`${capitalize(model)}${capitalize(NestLocation.service)}`)
+            ts.factory.createIdentifier(`${capitalize(model)}${capitalize(location)}`)
           ),
         ])
       ),
       ts.factory.createStringLiteral(
-        `./${NestLocation.service}s/${model.toLowerCase()}.${NestLocation.service}`
+        `./${pluralize(location)}/${model.toLowerCase()}.${location.toLowerCase()}`
       )
     )
   }
@@ -63,6 +65,14 @@ export class ModuleGenerator {
                   ts.factory.createArrayLiteralExpression([
                     ts.factory.createIdentifier(
                       `${capitalize(model)}${capitalize(NestLocation.service)}`
+                    ),
+                  ])
+                ),
+                ts.factory.createPropertyAssignment(
+                  ts.factory.createIdentifier('controllers'),
+                  ts.factory.createArrayLiteralExpression([
+                    ts.factory.createIdentifier(
+                      `${capitalize(model)}${capitalize(NestLocation.controller)}`
                     ),
                   ])
                 ),

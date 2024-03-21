@@ -1,2 +1,3 @@
 node_modules/
-.g-nest/
+g.nest.conf/
+g.nest.modules/

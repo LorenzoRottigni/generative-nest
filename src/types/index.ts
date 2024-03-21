@@ -25,14 +25,6 @@ export declare interface GeneratorConfig {
   }
 }
 
-export declare interface ModelBundle {
-  module: ts.SourceFile
-  events: ts.SourceFile
-  services: ts.SourceFile[]
-  controllers: ts.SourceFile[]
-  resolvers: ts.SourceFile[]
-}
-
 export declare type NestHooks = OnApplicationBootstrap &
   OnModuleInit &
   OnModuleDestroy &
@@ -56,4 +48,15 @@ export declare interface ORMDriver {
     method: PrismaAPI,
     prismaIdentifier: string
   ) => ts.TypeReferenceNode
+}
+
+export declare interface GNestGenerator {
+  // used from bundleService to create the SourceFile for the model that has been instantiated with the generator
+  get sourceLocation(): [string, string]
+  generate(): ts.Statement[]
+}
+
+export declare interface GNestBundle {
+  modules: Record<string, ts.SourceFile[]>
+  config: Record<string, ts.SourceFile[]>
 }

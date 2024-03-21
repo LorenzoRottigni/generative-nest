@@ -1,30 +1,30 @@
-import type { PrismaDriver } from '../drivers/prisma.driver'
-import type { BundleService } from '../services/bundle.service'
-import type { GeneratorConfig, Model } from '../types'
 import ts from 'typescript'
-import { capitalize } from '../utils'
+import { GNestGenerator, Model } from '../types'
 import { NestDecorator, NestLocation, NestPackage, PrismaAPI } from '../types/enums'
+import { Generator } from './generator'
+import { capitalize } from '../utils'
+import { PrismaDriver } from '../drivers/prisma.driver'
 import { NestService } from '../services/nest.service'
 
-export class ServiceGenerator {
-  constructor(
-    private driver: PrismaDriver,
-    private config: GeneratorConfig,
-    private bundleService: BundleService
-  ) {}
+export class ServiceGenerator extends Generator implements GNestGenerator {
+  constructor(model: Model, driver: PrismaDriver, private moduleDir = 'g.nest.modules') {
+    super(model, driver)
+  }
 
-  public generateBundle(): string[] {
-    return this.config.schema.models
-      .map(
-        (model) =>
-          this.bundleService.updateSourceFile(model.name, NestLocation.service, [
-            this.driver.DBClientImport,
-            this.driver.getModelsImport([model.name]),
-            NestService.getNestImport([NestDecorator.injectable], NestPackage.common),
-            this.getModelServiceClass(model),
-          ])?.fileName
-      )
-      .filter((f): f is string => !!f)
+  public get sourceLocation(): [string, string] {
+    return [
+      `${this.moduleDir}/${this.model.name.toLowerCase()}`,
+      `${this.model.name.toLowerCase()}.${NestLocation.service.toLowerCase()}.ts`,
+    ]
+  }
+
+  generate(): ts.Statement[] {
+    return [
+      this.driver.DBClientImport,
+      this.driver.getModelsImport([this.model.name]),
+      NestService.getNestImport([NestDecorator.injectable], NestPackage.common),
+      this.getModelServiceClass(this.model),
+    ]
   }
 
   private get serviceConstructor(): ts.ConstructorDeclaration {

@@ -1,32 +1,32 @@
-import type { PrismaDriver } from '../drivers/prisma.driver'
-import type { BundleService } from '../services/bundle.service'
-import type { GeneratorConfig, Model } from '../types'
 import ts from 'typescript'
-import { capitalize, pluralize } from '../utils'
+import { GNestGenerator, Model } from '../types'
 import { NestDecorator, NestLocation, NestPackage, PrismaAPI } from '../types/enums'
+import { capitalize, pluralize } from '../utils'
+import { Generator } from './generator'
+import { PrismaDriver } from '../drivers/prisma.driver'
 import { NestService } from '../services/nest.service'
 
-export class ControllerGenerator {
-  constructor(
-    private driver: PrismaDriver,
-    private config: GeneratorConfig,
-    private bundleService: BundleService
-  ) {}
+export class ControllerGenerator extends Generator implements GNestGenerator {
+  constructor(model: Model, driver: PrismaDriver, private moduleDir = 'g.nest.modules') {
+    super(model, driver)
+  }
 
-  public generateBundle(): string[] {
-    return this.config.schema.models
-      .map(
-        (model) =>
-          this.bundleService.updateSourceFile(model.name, NestLocation.controller, [
-            NestService.getNestImport(
-              [capitalize(NestLocation.controller), NestDecorator.post, NestDecorator.get],
-              NestPackage.common
-            ),
-            this.getServiceImport(model.name),
-            this.getModelControllerClass(model),
-          ])?.fileName
-      )
-      .filter((f): f is string => !!f)
+  public get sourceLocation(): [string, string] {
+    return [
+      `${this.moduleDir}/${this.model.name.toLowerCase()}`,
+      `${this.model.name.toLowerCase()}.${NestLocation.controller.toLowerCase()}.ts`,
+    ]
+  }
+
+  generate(): ts.Statement[] {
+    return [
+      NestService.getNestImport(
+        [capitalize(NestLocation.controller), NestDecorator.post, NestDecorator.get],
+        NestPackage.common
+      ),
+      this.getServiceImport(this.model.name),
+      this.getModelControllerClass(this.model),
+    ]
   }
 
   private getControllerConstructor(model: string): ts.ConstructorDeclaration {

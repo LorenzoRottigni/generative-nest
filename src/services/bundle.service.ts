@@ -1,97 +1,39 @@
-import { GeneratorConfig, ModelBundle } from '../types'
-import { NestLocation } from '../types/enums'
+import { GeneratorConfig, GNestBundle, Model } from '../types'
 import ts from 'typescript'
 import fs from 'fs'
 import _path from 'path'
-import { pluralize } from '../utils'
+import { ServiceGenerator } from '../generators/service.generator'
+import { ControllerGenerator } from '../generators/controller.generator'
+import { ModuleGenerator } from '../generators/module.generator'
+import { PrismaDriver } from '../drivers/prisma.driver'
+import { ConfigGenerator } from '../generators/config.generator'
 
 export class BundleService {
   constructor(
+    private generators: Array<
+      new (model: Model, driver: PrismaDriver) =>
+        | ServiceGenerator
+        | ControllerGenerator
+        | ModuleGenerator
+        | ConfigGenerator
+    >,
     private config: GeneratorConfig,
-    public bundle: ModelBundle[] = [],
-    private baseDir = '.g-nest'
+    private driver: PrismaDriver
   ) {}
 
-  public async loadBundle(): Promise<boolean> {
-    try {
-      for (const model of this.config.schema.models) {
-        const modelDir = `${this.baseDir}/${model.name.toLowerCase()}`
-        this.bundle.push({
-          services: [
-            await this.createSourceFile(
-              `${model.name.toLowerCase()}.${NestLocation.service}.ts`,
-              `${modelDir}/${pluralize(NestLocation.service)}`
-            ),
-          ],
-          resolvers: [
-            await this.createSourceFile(
-              `${model.name.toLowerCase()}.${NestLocation.resolver}.ts`,
-              `${modelDir}/${pluralize(NestLocation.resolver)}`
-            ),
-          ],
-          controllers: [
-            await this.createSourceFile(
-              `${model.name.toLowerCase()}.${NestLocation.controller}.ts`,
-              `${modelDir}/${pluralize(NestLocation.controller)}`
-            ),
-          ],
-          module: await this.createSourceFile(
-            `${model.name.toLowerCase()}.${NestLocation.module}.ts`,
-            modelDir
-          ),
-          events: await this.createSourceFile(`${model.name.toLowerCase()}.events.ts`, modelDir),
-        })
-      }
-
-      return this.bundle.length === this.config.schema.models.length
-    } catch (err) {
-      console.error(err)
-      return false
-    }
-  }
-
-  public async generateBundle(): Promise<string[]> {
-    try {
-      const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
-
-      return (
-        await Promise.all(
-          this.bundle.map(
-            async (modelBundle) =>
-              await Promise.all(
-                Object.values(modelBundle).map(
-                  async (sourceFile: ts.SourceFile | ts.SourceFile[]) =>
-                    Array.isArray(sourceFile)
-                      ? await Promise.all(
-                          sourceFile.map(
-                            async (sourceFile: ts.SourceFile) =>
-                              await this.writeFile(
-                                sourceFile.fileName,
-                                printer.printFile(sourceFile)
-                              )
-                          )
-                        )
-                      : await this.writeFile(sourceFile.fileName, printer.printFile(sourceFile))
-                )
-              )
-          )
+  public async generateBundle() {
+    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
+    for (const model of this.config.schema.models) {
+      for (const Generator of this.generators) {
+        const generator = new Generator(model, this.driver)
+        const [path, fileName] = generator.sourceLocation
+        const sourceFile = await this.createSourceFile(fileName, path)
+        const file = ts.factory.updateSourceFile(sourceFile, generator.generate())
+        await fs.promises.writeFile(
+          _path.join(process.cwd(), file.fileName),
+          printer.printFile(file)
         )
-      )
-        .flat(3)
-        .filter((f): f is string => !!f)
-    } catch (err) {
-      console.error(err)
-      return []
-    }
-  }
-
-  public async writeFile(filename: string, file: string): Promise<string | null> {
-    try {
-      await fs.promises.writeFile(_path.join(process.cwd(), filename), file)
-      return filename
-    } catch (err) {
-      console.error(err)
-      return null
+      }
     }
   }
 
@@ -119,35 +61,5 @@ export class BundleService {
       console.error(err)
       return ts.createSourceFile(filename, '', ts.ScriptTarget.Latest, false, ts.ScriptKind.TS)
     }
-  }
-
-  public getModelBundleIndex(model: string): number {
-    console.log('achi', this.bundle[0].module.fileName)
-    return this.bundle.findIndex((b) =>
-      b.module.fileName
-        .split('.')
-        .some((chunk) => chunk.toLowerCase().includes(model.toLowerCase()))
-    )
-  }
-
-  public updateSourceFile(
-    model: string,
-    location: NestLocation,
-    statements: ts.Statement[]
-  ): ts.SourceFile | null {
-    console.log(this.bundle[0])
-    const i = this.getModelBundleIndex(model.toLowerCase())
-    if (typeof i !== 'number' || !this.bundle?.[i]) return null
-    const k = Object.keys(this.bundle[i]).find((k) =>
-      k.toLowerCase().includes(location.toLowerCase())
-    )
-    if (typeof k !== 'string' || !this.bundle[i]?.[k]) return null
-
-    const file = ts.factory.updateSourceFile(
-      Array.isArray(this.bundle[i][k]) ? this.bundle[i][k][0] : this.bundle[i][k],
-      statements
-    )
-    this.bundle[i][k] = Array.isArray(this.bundle[i][k]) ? [file] : file
-    return this.bundle[i][k]
   }
 }

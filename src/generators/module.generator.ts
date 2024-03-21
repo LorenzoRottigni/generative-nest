@@ -1,34 +1,34 @@
-import type { PrismaDriver } from '../drivers/prisma.driver'
-import type { BundleService } from '../services/bundle.service'
-import type { GeneratorConfig, Model } from '../types'
 import ts from 'typescript'
-import { NestHook, NestLocation, NestPackage, PrismaAPI } from '../types/enums'
+import { GNestGenerator, Model } from '../types'
+import { NestHook, NestLocation, NestPackage } from '../types/enums'
+import { Generator } from './generator'
 import { capitalize, pluralize } from '../utils'
 import { NestService } from '../services/nest.service'
+import { PrismaDriver } from '../drivers/prisma.driver'
 
-export class ModuleGenerator {
-  constructor(
-    private driver: PrismaDriver,
-    private config: GeneratorConfig,
-    private bundleService: BundleService
-  ) {}
+export class ModuleGenerator extends Generator implements GNestGenerator {
+  constructor(model: Model, driver: PrismaDriver, private moduleDir = 'g.nest.modules') {
+    super(model, driver)
+  }
 
-  public generateBundle(): string[] {
-    return this.config.schema.models
-      .map(
-        (model) =>
-          this.bundleService.updateSourceFile(model.name, NestLocation.module, [
-            NestService.getNestImport(
-              [capitalize(NestLocation.module), ...Object.values(NestHook)],
-              NestPackage.common
-            ),
-            ...[NestLocation.service, NestLocation.controller].map((location) =>
-              this.getModelNestLocationImport(model.name, location)
-            ),
-            this.getModelModule(model.name),
-          ])?.fileName
-      )
-      .filter((f): f is string => !!f)
+  public get sourceLocation(): [string, string] {
+    return [
+      `${this.moduleDir}/${this.model.name.toLowerCase()}`,
+      `${this.model.name.toLowerCase()}.${NestLocation.module.toLowerCase()}.ts`,
+    ]
+  }
+
+  generate(): ts.Statement[] {
+    return [
+      NestService.getNestImport(
+        [capitalize(NestLocation.module), ...Object.values(NestHook)],
+        NestPackage.common
+      ),
+      ...[NestLocation.service, NestLocation.controller].map((location) =>
+        this.getModelNestLocationImport(this.model.name, location)
+      ),
+      this.getModelModule(this.model.name),
+    ]
   }
 
   private getModelNestLocationImport(model: string, location: NestLocation): ts.ImportDeclaration {

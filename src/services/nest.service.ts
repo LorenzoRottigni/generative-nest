@@ -1,12 +1,12 @@
 import ts from 'typescript'
-import { NestHook, NestPackage } from '../types/enums'
+import { NestPackage } from '../types/enums'
 
 export class NestService {
   constructor() {}
 
   public static getNestImport(
     imports: string[],
-    source: NestPackage = NestPackage.common
+    source: NestPackage = NestPackage.common,
   ): ts.ImportDeclaration {
     return ts.factory.createImportDeclaration(
       undefined,
@@ -18,12 +18,12 @@ export class NestService {
             ts.factory.createImportSpecifier(
               false,
               undefined,
-              ts.factory.createIdentifier(namedImport)
-            )
-          )
-        )
+              ts.factory.createIdentifier(namedImport),
+            ),
+          ),
+        ),
       ),
-      ts.factory.createStringLiteral(source)
+      ts.factory.createStringLiteral(source),
     )
   }
 }

@@ -1,7 +1,7 @@
 import ts from 'typescript'
 import type { DMMF } from '@prisma/generator-helper'
 import { PrismaAPI } from '../types/enums'
-import type { GeneratorConfig, ORMDriver } from '../types'
+import type { GeneratorConfig, ModelConfig, ORMDriver } from '../types'
 import { capitalize } from '../utils'
 
 export class PrismaDriver implements ORMDriver {
@@ -28,14 +28,22 @@ export class PrismaDriver implements ORMDriver {
     }
     return {
       schema: {
-        models: schema.datamodel.models.map((model) => ({
-          name: model.name,
-          fields: model.fields.map((field) => ({
-            name: field.name,
-            type: getTSType(field.type),
-          })),
-        })),
+        models: schema.datamodel.models.map(
+          (model): ModelConfig => ({
+            name: model.name,
+            fields: model.fields.map((field) => ({
+              name: field.name,
+              type: getTSType(field.type),
+              permissions: [],
+              validations: [],
+            })),
+          }),
+        ),
       },
+      configDir: '',
+      excludeFields: [],
+      excludeModels: [],
+      moduleDir: '',
     }
   }
 
@@ -50,19 +58,19 @@ export class PrismaDriver implements ORMDriver {
             ts.factory.createImportSpecifier(
               false,
               undefined,
-              ts.factory.createIdentifier(capitalize(model))
-            )
-          )
-        )
+              ts.factory.createIdentifier(capitalize(model)),
+            ),
+          ),
+        ),
       ),
-      ts.factory.createStringLiteral('@prisma/client')
+      ts.factory.createStringLiteral('@prisma/client'),
     )
   }
 
   public get DBConnectionExpression(): ts.AccessExpression {
     return ts.factory.createPropertyAccessExpression(
       /* expression */ ts.factory.createIdentifier('prisma'),
-      /* name */ ts.factory.createIdentifier('$connect')
+      /* name */ ts.factory.createIdentifier('$connect'),
     )
   }
 
@@ -76,11 +84,11 @@ export class PrismaDriver implements ORMDriver {
           ts.factory.createImportSpecifier(
             false,
             undefined,
-            ts.factory.createIdentifier('PrismaClient')
+            ts.factory.createIdentifier('PrismaClient'),
           ),
-        ])
+        ]),
       ),
-      ts.factory.createStringLiteral('@prisma/client')
+      ts.factory.createStringLiteral('@prisma/client'),
     )
   }
 
@@ -94,8 +102,8 @@ export class PrismaDriver implements ORMDriver {
       /* initalizer */ ts.factory.createNewExpression(
         ts.factory.createIdentifier('PrismaClient'),
         undefined,
-        []
-      )
+        [],
+      ),
     )
   }
 
@@ -103,18 +111,18 @@ export class PrismaDriver implements ORMDriver {
   public getCallExpression(
     model: string,
     method: PrismaAPI,
-    prismaIdentifier = 'this.prisma'
+    prismaIdentifier = 'this.prisma',
   ): ts.CallExpression {
     return ts.factory.createCallExpression(
       /* expression */ ts.factory.createPropertyAccessExpression(
         /* expression */ ts.factory.createPropertyAccessExpression(
           /* expression */ ts.factory.createIdentifier(prismaIdentifier),
-          /* name */ ts.factory.createIdentifier(model.toLowerCase())
+          /* name */ ts.factory.createIdentifier(model.toLowerCase()),
         ),
-        /* name */ ts.factory.createIdentifier(method)
+        /* name */ ts.factory.createIdentifier(method),
       ),
       /* typeArgs */ undefined,
-      /* args */ [ts.factory.createIdentifier('args')]
+      /* args */ [ts.factory.createIdentifier('args')],
     )
   }
 
@@ -124,15 +132,15 @@ export class PrismaDriver implements ORMDriver {
   public getCallArgsType(
     model: string,
     method: PrismaAPI,
-    prismaIdentifier = 'this.prisma'
+    prismaIdentifier = 'this.prisma',
   ): ts.IndexedAccessTypeNode {
     return ts.factory.createIndexedAccessTypeNode(
       /* objectType */ ts.factory.createTypeReferenceNode('Parameters', [
         /* typeName */ ts.factory.createTypeReferenceNode(
-          `typeof ${prismaIdentifier}.${model.toLowerCase()}.${method}`
+          `typeof ${prismaIdentifier}.${model.toLowerCase()}.${method}`,
         ),
       ]),
-      /* indexType */ ts.factory.createLiteralTypeNode(ts.factory.createNumericLiteral('0'))
+      /* indexType */ ts.factory.createLiteralTypeNode(ts.factory.createNumericLiteral('0')),
     )
   }
 
@@ -142,19 +150,19 @@ export class PrismaDriver implements ORMDriver {
   public getCallReturnType(
     model: string,
     method: PrismaAPI,
-    prismaIdentifier = 'this.prisma'
+    prismaIdentifier = 'this.prisma',
   ): ts.TypeReferenceNode {
     const argsType = ts
       .createPrinter()
       .printNode(
         ts.EmitHint.Unspecified,
         this.getCallArgsType(model, method),
-        ts.createSourceFile('', '', ts.ScriptTarget.Latest)
+        ts.createSourceFile('', '', ts.ScriptTarget.Latest),
       )
       .trim()
     return ts.factory.createTypeReferenceNode('ReturnType', [
       /* typeName */ ts.factory.createTypeReferenceNode(
-        `typeof ${prismaIdentifier}.${model.toLowerCase()}.${method}<typeof ${argsType}>`
+        `typeof ${prismaIdentifier}.${model.toLowerCase()}.${method}<typeof ${argsType}>`,
       ),
     ])
   }

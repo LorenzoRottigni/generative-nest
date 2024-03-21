@@ -9,20 +9,26 @@ import {
   OnModuleInit,
 } from '@nestjs/common'
 
-export declare interface Field {
+export declare interface FieldConfig {
   name: string
   type: string
+  permissions: string[]
+  validations: string[]
 }
 
-export declare interface Model {
+export declare interface ModelConfig {
   name: string
-  fields: Field[]
+  fields: FieldConfig[]
 }
 
 export declare interface GeneratorConfig {
   schema: {
-    models: Model[]
+    models: ModelConfig[]
   }
+  moduleDir: string
+  configDir: string
+  excludeModels: string[]
+  excludeFields: string[]
 }
 
 export declare type NestHooks = OnApplicationBootstrap &
@@ -36,17 +42,17 @@ export declare interface ORMDriver {
   getCallExpression: (
     model: string,
     method: PrismaAPI,
-    prismaIdentifier: string
+    prismaIdentifier: string,
   ) => ts.CallExpression
   getCallArgsType: (
     model: string,
     method: PrismaAPI,
-    prismaIdentifier: string
+    prismaIdentifier: string,
   ) => ts.IndexedAccessTypeNode
   getCallReturnType: (
     model: string,
     method: PrismaAPI,
-    prismaIdentifier: string
+    prismaIdentifier: string,
   ) => ts.TypeReferenceNode
 }
 

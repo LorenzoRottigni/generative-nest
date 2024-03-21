@@ -1,16 +1,17 @@
 import ts from 'typescript'
 import fs from 'fs'
+import prettier from 'prettier'
 import _path from 'path'
 import { ServiceGenerator } from './generators/service.generator'
 import { ControllerGenerator } from './generators/controller.generator'
 import { ModuleGenerator } from './generators/module.generator'
 import { PrismaDriver } from './drivers/prisma.driver'
 import { ConfigGenerator } from './generators/config.generator'
-import { GeneratorConfig, Model } from './types'
+import { GeneratorConfig, ModelConfig } from './types'
 
 const createSourceFile = async (
   filename: string,
-  path: string | undefined
+  path: string | undefined,
 ): Promise<ts.SourceFile> => {
   if (path?.startsWith('/')) path = path.slice(1, path.length - 1)
   if (path?.startsWith('./')) path = path.slice(2, path.length - 1)
@@ -36,23 +37,38 @@ const createSourceFile = async (
 
 export async function generateBundle(
   generators: Array<
-    new (model: Model, driver: PrismaDriver) =>
-      | ServiceGenerator
-      | ControllerGenerator
-      | ModuleGenerator
-      | ConfigGenerator
+    new (
+      model: ModelConfig,
+      driver: PrismaDriver,
+    ) => ServiceGenerator | ControllerGenerator | ModuleGenerator | ConfigGenerator
   >,
   config: GeneratorConfig,
-  driver: PrismaDriver
-) {
+  driver: PrismaDriver,
+): Promise<string[]> {
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
+  const report = []
   for (const model of config.schema.models) {
     for (const Generator of generators) {
-      const generator = new Generator(model, driver)
-      const [path, fileName] = generator.sourceLocation
-      const sourceFile = await createSourceFile(fileName, path)
-      const file = ts.factory.updateSourceFile(sourceFile, generator.generate())
-      await fs.promises.writeFile(_path.join(process.cwd(), file.fileName), printer.printFile(file))
+      try {
+        const generator = new Generator(model, driver)
+        const [path, fileName] = generator.sourceLocation
+        const sourceFile = await createSourceFile(fileName, path)
+        const file = ts.factory.updateSourceFile(sourceFile, generator.generate())
+        await fs.promises.writeFile(
+          _path.join(process.cwd(), file.fileName),
+          await prettier.format(printer.printFile(file), {
+            parser: 'typescript',
+            semi: true,
+            singleQuote: true,
+            tabWidth: 2,
+          }),
+        )
+        report.push(file.fileName)
+      } catch (err) {
+        console.error(err)
+      }
     }
   }
+
+  return report
 }

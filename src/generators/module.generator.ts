@@ -1,13 +1,17 @@
 import ts from 'typescript'
-import { GNestGenerator, Model } from '../types'
+import { GNestGenerator, ModelConfig } from '../types'
 import { NestHook, NestLocation, NestPackage } from '../types/enums'
 import { Generator } from './generator'
-import { capitalize, pluralize } from '../utils'
+import { capitalize } from '../utils'
 import { NestService } from '../services/nest.service'
 import { PrismaDriver } from '../drivers/prisma.driver'
 
 export class ModuleGenerator extends Generator implements GNestGenerator {
-  constructor(model: Model, driver: PrismaDriver, private moduleDir = 'g.nest.modules') {
+  constructor(
+    model: ModelConfig,
+    driver: PrismaDriver,
+    private moduleDir = 'g.nest.modules',
+  ) {
     super(model, driver)
   }
 
@@ -22,10 +26,10 @@ export class ModuleGenerator extends Generator implements GNestGenerator {
     return [
       NestService.getNestImport(
         [capitalize(NestLocation.module), ...Object.values(NestHook)],
-        NestPackage.common
+        NestPackage.common,
       ),
       ...[NestLocation.service, NestLocation.controller].map((location) =>
-        this.getModelNestLocationImport(this.model.name, location)
+        this.getModelNestLocationImport(this.model.name, location),
       ),
       this.getModelModule(this.model.name),
     ]
@@ -41,13 +45,11 @@ export class ModuleGenerator extends Generator implements GNestGenerator {
           ts.factory.createImportSpecifier(
             false,
             /* propertyName */ undefined,
-            ts.factory.createIdentifier(`${capitalize(model)}${capitalize(location)}`)
+            ts.factory.createIdentifier(`${capitalize(model)}${capitalize(location)}`),
           ),
-        ])
+        ]),
       ),
-      ts.factory.createStringLiteral(
-        `./${pluralize(location)}/${model.toLowerCase()}.${location.toLowerCase()}`
-      )
+      ts.factory.createStringLiteral(`./${model.toLowerCase()}.${location.toLowerCase()}`),
     )
   }
 
@@ -64,21 +66,21 @@ export class ModuleGenerator extends Generator implements GNestGenerator {
                   ts.factory.createIdentifier('providers'),
                   ts.factory.createArrayLiteralExpression([
                     ts.factory.createIdentifier(
-                      `${capitalize(model)}${capitalize(NestLocation.service)}`
+                      `${capitalize(model)}${capitalize(NestLocation.service)}`,
                     ),
-                  ])
+                  ]),
                 ),
                 ts.factory.createPropertyAssignment(
                   ts.factory.createIdentifier('controllers'),
                   ts.factory.createArrayLiteralExpression([
                     ts.factory.createIdentifier(
-                      `${capitalize(model)}${capitalize(NestLocation.controller)}`
+                      `${capitalize(model)}${capitalize(NestLocation.controller)}`,
                     ),
-                  ])
+                  ]),
                 ),
               ]),
-            ]
-          )
+            ],
+          ),
         ),
         ts.factory.createModifier(ts.SyntaxKind.ExportKeyword),
       ],
@@ -89,8 +91,8 @@ export class ModuleGenerator extends Generator implements GNestGenerator {
           ...Object.values(NestHook).map((hook) =>
             ts.factory.createExpressionWithTypeArguments(
               ts.factory.createIdentifier(hook),
-              undefined
-            )
+              undefined,
+            ),
           ),
         ]),
       ],
@@ -104,10 +106,10 @@ export class ModuleGenerator extends Generator implements GNestGenerator {
             /* typeParameters */ undefined,
             /* parameters */ [],
             /* returnType */ ts.factory.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
-            ts.factory.createBlock([], false)
-          )
+            ts.factory.createBlock([], false),
+          ),
         ),
-      ]
+      ],
     )
   }
 }

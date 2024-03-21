@@ -1,5 +1,5 @@
 import ts from 'typescript'
-import { GNestGenerator, Model } from '../types'
+import { GNestGenerator, ModelConfig } from '../types'
 import { NestDecorator, NestLocation, NestPackage, PrismaAPI } from '../types/enums'
 import { Generator } from './generator'
 import { capitalize } from '../utils'
@@ -7,7 +7,11 @@ import { PrismaDriver } from '../drivers/prisma.driver'
 import { NestService } from '../services/nest.service'
 
 export class ServiceGenerator extends Generator implements GNestGenerator {
-  constructor(model: Model, driver: PrismaDriver, private moduleDir = 'g.nest.modules') {
+  constructor(
+    model: ModelConfig,
+    driver: PrismaDriver,
+    private moduleDir = 'g.nest.modules',
+  ) {
     super(model, driver)
   }
 
@@ -33,20 +37,20 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
       /* params */ [this.driver.DBClientParam],
       /* body */ ts.factory.createBlock(
         [ts.factory.createExpressionStatement(this.driver.DBConnectionExpression)],
-        /* multiline */ true
-      )
+        /* multiline */ true,
+      ),
     )
   }
 
-  private getModelServiceClass(model: Model): ts.ClassDeclaration {
+  private getModelServiceClass(model: ModelConfig): ts.ClassDeclaration {
     return ts.factory.createClassDeclaration(
       /* modifiers */ [
         ts.factory.createDecorator(
           ts.factory.createCallExpression(
             ts.factory.createIdentifier(NestDecorator.injectable),
             /* type arguments */ undefined,
-            /* arguments */ []
-          )
+            /* arguments */ [],
+          ),
         ),
         ts.factory.createModifier(ts.SyntaxKind.ExportKeyword),
       ],
@@ -56,19 +60,19 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
       /* members */ [
         this.serviceConstructor,
         ...Object.values(this.driver.ORMApi).map((method) =>
-          this.getModelMethod(model.name, method)
+          this.getModelMethod(model.name, method),
         ),
         /* member */ ...model.fields
           .map((field) =>
-            field.name !== 'id' ? this.getModelFieldGetterMethod(model.name, field) : []
+            field.name !== 'id' ? this.getModelFieldGetterMethod(model.name, field) : [],
           )
           .flat(1),
         /* member */ ...model.fields
           .map((field) =>
-            field.name !== 'id' ? this.getModelFieldSetterMethod(model.name, field) : []
+            field.name !== 'id' ? this.getModelFieldSetterMethod(model.name, field) : [],
           )
           .flat(1),
-      ]
+      ],
     )
   }
 
@@ -103,13 +107,13 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
           /* type */ this.driver.getCallArgsType(model, method),
           /* initializer */ method === PrismaAPI.findMany
             ? ts.factory.createObjectLiteralExpression()
-            : undefined
+            : undefined,
         ),
       ],
       /* returnType */ ts.factory.createTypeReferenceNode('Promise', [
         ts.factory.createTypeReferenceNode('ReturnType', [
           /* typeName */ ts.factory.createTypeReferenceNode(
-            `typeof this.prisma.${model.toLowerCase()}.${method}<typeof args>`
+            `typeof this.prisma.${model.toLowerCase()}.${method}<typeof args>`,
           ),
         ]),
       ]),
@@ -127,23 +131,23 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
                     /* expression */ ts.factory.createPropertyAccessExpression(
                       /* expression */ ts.factory.createPropertyAccessExpression(
                         /* expression */ ts.factory.createIdentifier('this.prisma'),
-                        /* name */ ts.factory.createIdentifier(model.toLowerCase())
+                        /* name */ ts.factory.createIdentifier(model.toLowerCase()),
                       ),
-                      /* name */ ts.factory.createIdentifier(method)
+                      /* name */ ts.factory.createIdentifier(method),
                     ),
                     /* typeArgs */ undefined,
-                    /* args */ [ts.factory.createIdentifier('args')]
-                  )
-                )
+                    /* args */ [ts.factory.createIdentifier('args')],
+                  ),
+                ),
               ),
-            ]
+            ],
           ),
           /* return result; */ ts.factory.createReturnStatement(
-            ts.factory.createIdentifier('result')
+            ts.factory.createIdentifier('result'),
           ),
         ],
-        /* multiline */ true
-      )
+        /* multiline */ true,
+      ),
     )
   }
 
@@ -158,7 +162,7 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
    */
   private getModelFieldGetterMethod(
     modelName: string,
-    field: { name: string; type: string }
+    field: { name: string; type: string },
   ): ts.MethodDeclaration {
     return ts.factory.createMethodDeclaration(
       /* modifiers */ [
@@ -175,7 +179,7 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
           /* dotDotToken */ undefined,
           /* name */ ts.factory.createIdentifier('id'),
           /* type */ undefined,
-          /* initializer */ ts.factory.createTypeReferenceNode('number', [])
+          /* initializer */ ts.factory.createTypeReferenceNode('number', []),
         ),
       ],
       /* returnType */ ts.factory.createTypeReferenceNode(
@@ -185,7 +189,7 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
             ts.factory.createTypeReferenceNode(field.type),
             ts.factory.createTypeReferenceNode('null'),
           ]),
-        ]
+        ],
       ),
       /* body */ ts.factory.createBlock(
         [
@@ -199,9 +203,9 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
                         /* expression */ ts.factory.createPropertyAccessExpression(
                           /* expression */ ts.factory.createPropertyAccessExpression(
                             /* expression */ ts.factory.createIdentifier('this.prisma'),
-                            /* name */ ts.factory.createIdentifier(modelName.toLowerCase())
+                            /* name */ ts.factory.createIdentifier(modelName.toLowerCase()),
                           ),
-                          ts.factory.createIdentifier(PrismaAPI.findUnique)
+                          ts.factory.createIdentifier(PrismaAPI.findUnique),
                         ),
                         /* typeArgs */ undefined,
                         /* args */ [
@@ -213,36 +217,36 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
                                   /* properties */ [
                                     ts.factory.createPropertyAssignment(
                                       ts.factory.createIdentifier('id'),
-                                      ts.factory.createIdentifier('id')
+                                      ts.factory.createIdentifier('id'),
                                     ),
-                                  ]
-                                )
+                                  ],
+                                ),
                               ),
                               ts.factory.createPropertyAssignment(
                                 /* name */ ts.factory.createIdentifier('select'),
                                 /* initalizer */ ts.factory.createObjectLiteralExpression([
                                   ts.factory.createPropertyAssignment(
                                     ts.factory.createIdentifier(field.name),
-                                    ts.factory.createTrue()
+                                    ts.factory.createTrue(),
                                   ),
-                                ])
+                                ]),
                               ),
-                            ]
+                            ],
                           ),
-                        ]
-                      )
-                    )
+                        ],
+                      ),
+                    ),
                   ),
-                  /* name */ ts.factory.createIdentifier(field.name)
-                )
+                  /* name */ ts.factory.createIdentifier(field.name),
+                ),
               ),
               /* operator */ ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
-              /* right */ ts.factory.createNull()
-            )
+              /* right */ ts.factory.createNull(),
+            ),
           ),
         ],
-        /* multiline */ true
-      )
+        /* multiline */ true,
+      ),
     )
   }
 
@@ -260,7 +264,7 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
    */
   private getModelFieldSetterMethod(
     model: string,
-    field: { name: string; type: string }
+    field: { name: string; type: string },
   ): ts.MethodDeclaration {
     /* public async set<Model>(id: number, <field>: string): Promise<<Model>> */
     return ts.factory.createMethodDeclaration(
@@ -278,14 +282,14 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
           /* dotDotToken */ undefined,
           /* name */ ts.factory.createIdentifier('id'),
           /* questionToken */ undefined,
-          /* type */ ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword)
+          /* type */ ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
         ),
         ts.factory.createParameterDeclaration(
           /* modifiers */ undefined,
           /* dotDotToken */ undefined,
           /* name */ ts.factory.createIdentifier(field.name),
           /* questionToken */ undefined,
-          /* type */ ts.factory.createTypeReferenceNode(field.type)
+          /* type */ ts.factory.createTypeReferenceNode(field.type),
         ),
       ],
       /* returnType */ ts.factory.createTypeReferenceNode('Promise', [
@@ -306,9 +310,9 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
                       /* expression */ ts.factory.createPropertyAccessExpression(
                         ts.factory.createPropertyAccessExpression(
                           ts.factory.createIdentifier('this.prisma'),
-                          ts.factory.createIdentifier(model.toLowerCase())
+                          ts.factory.createIdentifier(model.toLowerCase()),
                         ),
-                        ts.factory.createIdentifier(PrismaAPI.update)
+                        ts.factory.createIdentifier(PrismaAPI.update),
                       ),
                       /* typeArgs */ undefined,
                       /* args */ [
@@ -320,10 +324,10 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
                                 /* properties */ [
                                   ts.factory.createPropertyAssignment(
                                     /* name */ ts.factory.createIdentifier('id'),
-                                    /* initalizer */ ts.factory.createIdentifier('id')
+                                    /* initalizer */ ts.factory.createIdentifier('id'),
                                   ),
-                                ]
-                              )
+                                ],
+                              ),
                             ),
                             ts.factory.createPropertyAssignment(
                               /* name */ ts.factory.createIdentifier('data'),
@@ -331,25 +335,25 @@ export class ServiceGenerator extends Generator implements GNestGenerator {
                                 /* properties */ [
                                   ts.factory.createPropertyAssignment(
                                     ts.factory.createIdentifier(field.name),
-                                    ts.factory.createIdentifier(field.name)
+                                    ts.factory.createIdentifier(field.name),
                                   ),
-                                ]
-                              )
+                                ],
+                              ),
                             ),
-                          ]
+                          ],
                         ),
-                      ]
-                    )
-                  )
+                      ],
+                    ),
+                  ),
                 ),
               ],
-              ts.NodeFlags.Const
-            )
+              ts.NodeFlags.Const,
+            ),
           ),
           /* statement */ ts.factory.createReturnStatement(ts.factory.createIdentifier('result')),
         ],
-        /* multiline */ true
-      )
+        /* multiline */ true,
+      ),
     )
   }
 }

@@ -29,6 +29,7 @@ export declare interface GeneratorConfig {
   configDir: string
   excludeModels: string[]
   excludeFields: string[]
+  prismaSchema: string
 }
 
 export declare type NestHooks = OnApplicationBootstrap &

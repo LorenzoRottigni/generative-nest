@@ -44,6 +44,7 @@ export class PrismaDriver implements ORMDriver {
       excludeFields: [],
       excludeModels: [],
       moduleDir: '',
+      prismaSchema: '',
     }
   }
 

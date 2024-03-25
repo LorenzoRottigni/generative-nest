@@ -13,7 +13,7 @@ async function main() {
   // load the config from g.nest.conf or parse the schema
   // const config = prismaDriver.parseSchema(schema)
 
-  console.log(config)
+  console.log(JSON.stringify(config, null, 2))
   await generateBundle(
     [ConfigGenerator, ServiceGenerator, ControllerGenerator, ModuleGenerator],
     config,

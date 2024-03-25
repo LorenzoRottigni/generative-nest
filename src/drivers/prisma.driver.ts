@@ -31,6 +31,8 @@ export class PrismaDriver implements ORMDriver {
         models: schema.datamodel.models.map(
           (model): ModelConfig => ({
             name: model.name,
+            permissions: [],
+            validations: [],
             fields: model.fields.map((field) => ({
               name: field.name,
               type: getTSType(field.type),

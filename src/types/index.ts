@@ -9,17 +9,20 @@ import {
   OnModuleInit,
 } from '@nestjs/common'
 
-export declare interface FieldConfig {
-  name: string
-  type: string
+export declare type APIConfig<T extends {}> = T & {
   permissions: string[]
   validations: string[]
 }
 
-export declare interface ModelConfig {
+export declare type FieldConfig = APIConfig<{
+  name: string
+  type: string
+}>
+
+export declare type ModelConfig = APIConfig<{
   name: string
   fields: FieldConfig[]
-}
+}>
 
 export declare interface GeneratorConfig {
   schema: {

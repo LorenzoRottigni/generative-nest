@@ -25,16 +25,19 @@ export class ConfigLoader {
     return await Promise.all(
       schema.datamodel.models.map(async (model): Promise<ModelConfig> => {
         try {
-          const path = `${process.cwd()}/${this.config.configDir}/${model.name.toLowerCase()}/${model.name.toLowerCase()}.config.ts`
-          if (!fs.existsSync(path)) {
+          const basePath = `${process.cwd()}/${this.config.configDir}/${model.name.toLowerCase()}`
+          const path = `${basePath}/${model.name.toLowerCase()}.config.ts`
+          if (!fs.existsSync(basePath)) {
           }
-          await fs.promises.access(path)
+          await fs.promises.access(basePath)
           const config = await import(path)
           return config.default
         } catch (err) {
           console.error(err)
           return {
             name: model.name,
+            permissions: [],
+            validations: [],
             fields: model.fields.map((field) => ({
               name: field.name,
               permissions: [],

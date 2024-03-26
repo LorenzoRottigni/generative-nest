@@ -43,6 +43,19 @@ export class ConfigGenerator extends Generator implements GNestGenerator {
           ts.factory.createObjectLiteralExpression(
             [
               ts.factory.createPropertyAssignment(
+                'name',
+                ts.factory.createStringLiteral(this.model.name.toLowerCase()),
+              ),
+              ts.factory.createPropertyAssignment('enabled', ts.factory.createTrue()),
+              ts.factory.createPropertyAssignment(
+                'validations',
+                ts.factory.createArrayLiteralExpression([]),
+              ),
+              ts.factory.createPropertyAssignment(
+                'permissions',
+                ts.factory.createArrayLiteralExpression([]),
+              ),
+              ts.factory.createPropertyAssignment(
                 'fields',
                 ts.factory.createArrayLiteralExpression(
                   this.model.fields.map((field) =>
@@ -52,8 +65,16 @@ export class ConfigGenerator extends Generator implements GNestGenerator {
                         ts.factory.createStringLiteral(field.name),
                       ),
                       ts.factory.createPropertyAssignment(
+                        'enabled',
+                        field.name !== 'id' ? ts.factory.createTrue() : ts.factory.createFalse(),
+                      ),
+                      ts.factory.createPropertyAssignment(
+                        'dto',
+                        field.name !== 'id' ? ts.factory.createTrue() : ts.factory.createFalse(),
+                      ),
+                      ts.factory.createPropertyAssignment(
                         'type',
-                        ts.factory.createStringLiteral(field.type),
+                        ts.factory.createStringLiteral(this.driver.parseFieldType(field.type)),
                       ),
                       ts.factory.createPropertyAssignment(
                         'validations',
@@ -66,18 +87,6 @@ export class ConfigGenerator extends Generator implements GNestGenerator {
                     ]),
                   ),
                 ),
-              ),
-              ts.factory.createPropertyAssignment(
-                'name',
-                ts.factory.createStringLiteral(this.model.name.toLowerCase()),
-              ),
-              ts.factory.createPropertyAssignment(
-                'validations',
-                ts.factory.createArrayLiteralExpression([]),
-              ),
-              ts.factory.createPropertyAssignment(
-                'permissions',
-                ts.factory.createArrayLiteralExpression([]),
               ),
             ],
             true,

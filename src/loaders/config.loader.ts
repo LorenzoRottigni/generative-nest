@@ -14,8 +14,6 @@ export class ConfigLoader {
     private config: Omit<GeneratorConfig, 'schema'> = {
       configDir: 'g.nest.conf',
       moduleDir: 'g.nest.modules',
-      excludeFields: [],
-      excludeModels: [],
       prismaSchema: 'tests/prisma/schema.prisma',
     },
     private schema?: DMMF.Document,
@@ -38,11 +36,14 @@ export class ConfigLoader {
             name: model.name,
             permissions: [],
             validations: [],
+            enabled: true,
             fields: model.fields.map((field) => ({
               name: field.name,
               permissions: [],
               type: field.type,
               validations: [],
+              enabled: field.name !== 'id',
+              dto: field.name !== 'id',
             })),
           }
         }

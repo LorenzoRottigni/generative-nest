@@ -12,11 +12,13 @@ import {
 export declare type APIConfig<T extends {}> = T & {
   permissions: string[]
   validations: string[]
+  enabled: boolean
 }
 
 export declare type FieldConfig = APIConfig<{
   name: string
   type: string
+  dto: boolean
 }>
 
 export declare type ModelConfig = APIConfig<{
@@ -30,8 +32,6 @@ export declare interface GeneratorConfig {
   }
   moduleDir: string
   configDir: string
-  excludeModels: string[]
-  excludeFields: string[]
   prismaSchema: string
 }
 

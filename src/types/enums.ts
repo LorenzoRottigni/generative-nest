@@ -17,6 +17,7 @@ export enum NestLocation {
   service = 'service',
   handler = 'handler',
   module = 'module',
+  dto = 'dto',
 }
 
 export enum NestHook {

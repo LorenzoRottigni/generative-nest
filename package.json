@@ -19,6 +19,7 @@
   },
   "scripts": {
     "jest:test": "jest tests",
+    "gnest:generate": "npx ts-node tests/index.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate"
   }

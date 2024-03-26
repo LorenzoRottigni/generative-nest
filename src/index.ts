@@ -2,12 +2,9 @@ import ts from 'typescript'
 import fs from 'fs'
 import prettier from 'prettier'
 import _path from 'path'
-import { ServiceGenerator } from './generators/service.generator'
-import { ControllerGenerator } from './generators/controller.generator'
-import { ModuleGenerator } from './generators/module.generator'
 import { PrismaDriver } from './drivers/prisma.driver'
-import { ConfigGenerator } from './generators/config.generator'
 import { GeneratorConfig, ModelConfig } from './types'
+import { Generator } from './generators/generator'
 
 const createSourceFile = async (
   filename: string,
@@ -36,12 +33,7 @@ const createSourceFile = async (
 }
 
 export async function generateBundle(
-  generators: Array<
-    new (
-      model: ModelConfig,
-      driver: PrismaDriver,
-    ) => ServiceGenerator | ControllerGenerator | ModuleGenerator | ConfigGenerator
-  >,
+  generators: Array<new (model: ModelConfig, driver: PrismaDriver) => Generator>,
   config: GeneratorConfig,
   driver: PrismaDriver,
 ): Promise<string[]> {

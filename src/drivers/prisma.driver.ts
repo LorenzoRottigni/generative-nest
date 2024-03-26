@@ -11,21 +11,22 @@ export class PrismaDriver implements ORMDriver {
     return PrismaAPI
   }
 
-  public parseSchema(schema: DMMF.Document): GeneratorConfig {
-    const getTSType = (type: string): string => {
-      switch (type) {
-        case 'Int':
-          return 'number'
-        case 'String':
-          return 'string'
-        case 'Boolean':
-          return 'boolean'
-        case 'DateTime':
-          return 'Date'
-        default:
-          return 'any'
-      }
+  public parseFieldType(type: string): string {
+    switch (type) {
+      case 'Int':
+        return 'number'
+      case 'String':
+        return 'string'
+      case 'Boolean':
+        return 'boolean'
+      case 'DateTime':
+        return 'Date'
+      default:
+        return 'any'
     }
+  }
+
+  public parseSchema(schema: DMMF.Document): GeneratorConfig {
     return {
       schema: {
         models: schema.datamodel.models.map(
@@ -33,18 +34,19 @@ export class PrismaDriver implements ORMDriver {
             name: model.name,
             permissions: [],
             validations: [],
+            enabled: true,
             fields: model.fields.map((field) => ({
               name: field.name,
-              type: getTSType(field.type),
+              type: this.parseFieldType(field.type),
               permissions: [],
               validations: [],
+              enabled: field.name !== 'id',
+              dto: field.name !== 'id',
             })),
           }),
         ),
       },
       configDir: '',
-      excludeFields: [],
-      excludeModels: [],
       moduleDir: '',
       prismaSchema: '',
     }
